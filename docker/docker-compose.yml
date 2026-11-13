@@ -1,0 +1,76 @@
+# iVolve Microservices Docker Compose
+# Integrates microservices source from https://github.com/IbrahimAdel15/iVolveFinalProject.git
+# with a local MySQL database for development and testing.
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ivolve-mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ivolve
+      MYSQL_USER: ivolveuser
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-ivolvepassword}
+    ports:
+      - "3306:3306"
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./mysql-init:/docker-entrypoint-initdb.d
+    networks:
+      - ivolve-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  frontend:
+    build:
+      context: https://github.com/IbrahimAdel15/iVolveFinalProject.git#main:frontend
+      dockerfile: Dockerfile
+    container_name: ivolve-frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://backend:5000
+      - NODE_ENV=production
+    depends_on:
+      - backend
+      - mysql
+    networks:
+      - ivolve-network
+
+  backend:
+    build:
+      context: https://github.com/IbrahimAdel15/iVolveFinalProject.git#main:backend
+      dockerfile: Dockerfile
+    container_name: ivolve-backend
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_NAME=ivolve
+      - DB_USER=ivolveuser
+      - DB_PASSWORD=${MYSQL_PASSWORD:-ivolvepassword}
+      - NODE_ENV=production
+    depends_on:
+      - mysql
+    networks:
+      - ivolve-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+networks:
+  ivolve-network:
+    driver: bridge
+
+volumes:
+  db_data:
+    driver: local

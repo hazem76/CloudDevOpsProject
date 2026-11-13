@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ivolve
+  labels:
+    name: ivolve
+    environment: production
+    project: ivolve
+spec:
+  finalizers:
+    - kubernetes

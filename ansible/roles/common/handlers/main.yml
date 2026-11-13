@@ -1,0 +1,5 @@
+---
+# handlers file for common role
+- name: restart common services
+  debug:
+    msg: "Common services restart triggered"

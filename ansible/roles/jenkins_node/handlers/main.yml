@@ -1,0 +1,11 @@
+---
+# handlers file for jenkins_node role
+- name: restart jenkins
+  service:
+    name: jenkins
+    state: restarted
+
+- name: restart docker
+  service:
+    name: docker
+    state: restarted

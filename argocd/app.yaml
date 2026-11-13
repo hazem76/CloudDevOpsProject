@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ivolve
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: 'https://github.com/hazem76/CloudDevOpsProject.git'
+    targetRevision: main
+    path: kubernetes/
+  destination:
+    server: 'https://kubernetes.default.svc'
+    namespace: ivolve
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - RespectIgnoreDifferences=true
+      - Validate=true
+      - PrunePropagationPolicy=foreground
+      - PruneLast=true
+  info: []

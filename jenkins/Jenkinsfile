@@ -1,0 +1,124 @@
+pipeline {
+    agent any
+
+    environment {
+        ECR_REPO = 'hazem76/ivolve-app'
+        AWS_REGION = 'us-east-1'
+        AWS_ACCOUNT_ID = ''
+        IMAGE_TAG = "${env.BUILD_NUMBER}"
+        DOCKER_IMAGE = 'ivolve-app:latest'
+        MANIFEST_PATH = 'kubernetes/'
+        GIT_REPO = 'https://github.com/hazem76/CloudDevOpsProject.git'
+        GIT_BRANCH = 'main'
+        KUBECTL_CREDENTIALS = 'kubeconfig-credentials'
+        ECR_CREDENTIALS = 'ecr-credentials'
+        GIT_CREDENTIALS = 'git-credentials'
+    }
+
+    stages {
+        stage('Checkout') {
+            steps {
+                checkout scm
+            }
+        }
+
+        stage('Build App') {
+            steps {
+                buildImage([
+                    workspace: env.WORKSPACE,
+                    appDir: 'docker/',
+                    buildCmd: 'docker build -t ivolve-app:latest -f Dockerfile .'
+                ])
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    sh "docker build -t ${env.DOCKER_IMAGE} -f docker/Dockerfile ."
+                    echo "Built Docker image: ${env.DOCKER_IMAGE}"
+                }
+            }
+        }
+
+        stage('Scan Docker Image') {
+            steps {
+                scanImage([
+                    dockerImage: env.DOCKER_IMAGE,
+                    severity: 'HIGH,CRITICAL',
+                    exitCode: 0
+                ])
+            }
+        }
+
+        stage('Push Image to ECR') {
+            steps {
+                script {
+                    def fullImageName = pushImage([
+                        ecrRepo: env.ECR_REPO,
+                        imageTag: env.IMAGE_TAG,
+                        awsRegion: env.AWS_REGION,
+                        awsAccountId: env.AWS_ACCOUNT_ID,
+                        ecrCredentials: env.ECR_CREDENTIALS,
+                        localImageName: env.DOCKER_IMAGE
+                    ])
+                    echo "Pushed image: ${fullImageName}"
+                }
+            }
+        }
+
+        stage('Delete Local Image') {
+            steps {
+                deleteLocalImage([
+                    dockerImage: env.DOCKER_IMAGE,
+                    force: true
+                ])
+            }
+        }
+
+        stage('Update Manifests and Push') {
+            steps {
+                updateManifestsAndPush([
+                    manifestPath: env.MANIFEST_PATH,
+                    dockerImage: "${env.ECR_REPO}:${env.IMAGE_TAG}",
+                    gitRepo: env.GIT_REPO,
+                    gitBranch: env.GIT_BRANCH,
+                    gitUserName: 'jenkins',
+                    gitUserEmail: 'jenkins@ivolve.local'
+                ])
+            }
+        }
+
+        stage('Deploy to Kubernetes') {
+            steps {
+                script {
+                    withCredentials([file(credentialsId: env.KUBECTL_CREDENTIALS, variable: 'KUBECONFIG')]) {
+                        sh "export KUBECONFIG=${KUBECONFIG}"
+                        sh "kubectl apply -f ${env.MANIFEST_PATH} -n ivolve"
+                        sh "kubectl rollout status deployment/ivolve-app -n ivolve --timeout=300s"
+                    }
+                    echo "Deployed to Kubernetes cluster"
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+            echo 'Pipeline execution completed. Workspace cleaned.'
+        }
+        success {
+            echo 'Pipeline completed successfully!'
+            echo "Image: ${env.ECR_REPO}:${env.IMAGE_TAG}"
+        }
+        failure {
+            echo 'Pipeline failed! Check build logs at: ${env.BUILD_URL}'
+            emailext (
+                subject: "[Jenkins] Pipeline Failed: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                body: "Pipeline failed. Check logs: ${env.BUILD_URL}",
+                to: "devops-team@ivolve.com"
+            )
+        }
+    }
+}

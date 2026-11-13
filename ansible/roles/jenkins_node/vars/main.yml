@@ -1,0 +1,5 @@
+---
+# vars file for jenkins_node role
+jenkins_port: 8080
+trivy_version: "v0.52.0"
+trivy_install_path: /usr/local/bin/trivy

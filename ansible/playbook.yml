@@ -1,0 +1,7 @@
+---
+- name: Configure iVolve Jenkins Node
+  hosts: all
+  become: yes
+  roles:
+    - common
+    - jenkins_node

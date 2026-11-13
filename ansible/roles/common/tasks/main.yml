@@ -1,0 +1,47 @@
+---
+# Common role - Base system configuration for all nodes
+
+- name: Update apt package cache
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: Install essential system packages
+  apt:
+    name:
+      - curl
+      - wget
+      - git
+      - vim
+      - unzip
+      - software-properties-common
+      - apt-transport-https
+      - ca-certificates
+      - gnupg
+      - lsb-release
+    state: present
+
+- name: Ensure Docker group exists
+  group:
+    name: docker
+    state: present
+
+- name: Add ubuntu user to docker group
+  user:
+    name: ubuntu
+    groups: docker
+    append: yes
+
+- name: Configure system limits
+  pam_limits:
+    domain: ubuntu
+    limit_type: soft
+    limit_item: nofile
+    value: 65535
+
+- name: Configure system limits (hard)
+  pam_limits:
+    domain: ubuntu
+    limit_type: hard
+    limit_item: nofile
+    value: 65535

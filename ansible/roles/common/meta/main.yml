@@ -1,0 +1,18 @@
+---
+# meta file for common role
+galaxy_info:
+  author: iVolve DevOps Team
+  description: Common base system configuration role
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - common
+    - system
+    - base
+
+dependencies: []

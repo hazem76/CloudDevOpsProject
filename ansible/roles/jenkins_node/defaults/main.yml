@@ -1,0 +1,8 @@
+---
+# defaults file for jenkins_node role
+jenkins_port: 8080
+trivy_version: "v0.52.0"
+jenkins_java_package: openjdk-17-jre
+docker_packages:
+  - docker.io
+  - docker-compose

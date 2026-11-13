@@ -1,0 +1,21 @@
+---
+# meta file for jenkins_node role
+galaxy_info:
+  author: iVolve DevOps Team
+  description: Jenkins node setup role with Java, Jenkins LTS, Docker, and Trivy
+  license: MIT
+  min_ansible_version: "2.12"
+  platforms:
+    - name: Ubuntu
+      versions:
+        - focal
+        - jammy
+  galaxy_tags:
+    - jenkins
+    - ci
+    - docker
+    - trivy
+    - security-scanning
+
+dependencies:
+  - role: common

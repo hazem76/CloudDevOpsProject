@@ -1,0 +1,5 @@
+---
+# defaults file for common role
+common_swap_enabled: false
+common_timezone: "UTC"
+common_locale: "en_US.UTF-8"

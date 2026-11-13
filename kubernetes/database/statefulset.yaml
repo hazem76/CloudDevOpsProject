@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: ivolve-db
+  namespace: ivolve
+  labels:
+    app: ivolve-db
+    component: database
+spec:
+  serviceName: ivolve-db-svc
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ivolve-db
+  template:
+    metadata:
+      labels:
+        app: ivolve-db
+        component: database
+    spec:
+      containers:
+        - name: mysql
+          image: mysql:8.0
+          ports:
+            - containerPort: 3306
+              name: mysql
+          envFrom:
+            - configMapRef:
+                name: ivolve-config
+            - secretRef:
+                name: ivolve-secrets
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ivolve-secrets
+                  key: DATABASE_ROOT_PASSWORD
+            - name: MYSQL_DATABASE
+              value: "ivovle"
+            - name: MYSQL_USER
+              valueFrom:
+                secretKeyRef:
+                  name: ivolve-secrets
+                  key: DATABASE_USERNAME
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: ivolve-secrets
+                  key: DATABASE_PASSWORD
+          volumeMounts:
+            - name: mysql-data
+              mountPath: /var/lib/mysql
+          readinessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+          livenessProbe:
+            exec:
+              command: ["mysqladmin", "ping", "-h", "localhost"]
+            initialDelaySeconds: 30
+            periodSeconds: 20
+            timeoutSeconds: 5
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1000m"
+              memory: "2Gi"
+      volumes:
+        - name: mysql-data
+          persistentVolumeClaim:
+            claimName: ivolve-db-pvc
+  volumeClaimTemplates:
+    - metadata:
+        name: mysql-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: ivolve-fast-storage
+        resources:
+          requests:
+            storage: 10Gi

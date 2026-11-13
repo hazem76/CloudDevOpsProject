@@ -1,0 +1,9 @@
+---
+# vars file for common role
+common_packages:
+  - curl
+  - wget
+  - git
+  - vim
+  - unzip
+  - software-properties-common
